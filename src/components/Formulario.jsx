@@ -1,5 +1,6 @@
 import React, { Fragment, useState } from 'react';
 import styled from '@emotion/styled';
+import { obtenerDiferenciaYear, calcularMarca, obtenerPlan } from '../helper';
 
 const Campo = styled.div`
     display: flex;
@@ -48,7 +49,7 @@ const Error = styled.div`
     margin-bottom: 2rem;
 `;
 
-const Formulario = () => {
+const Formulario = ({ guardarResumen, guardarCargando }) => {
 
     const [datos, guardarDatos] = useState({
         marca: '',
@@ -59,7 +60,7 @@ const Formulario = () => {
     const [error, guardarError] = useState(false);
 
     //Extraer los valores del state
-    const {marca, modelo, plan} = datos;
+    const { marca, modelo, plan } = datos;
 
     //Leer datos del formulario
     const obtenerInfoFormulario = evt => {
@@ -72,24 +73,43 @@ const Formulario = () => {
     //Cuando el usuario presiona submit
     const cotizarSeguro = (evt) => {
         evt.preventDefault();
-        if(marca.trim() === '' || modelo.trim() === '' || plan.trim() === ''){
+        if (marca.trim() === '' || modelo.trim() === '' || plan.trim() === '') {
             guardarError(true);
             return;
         }
         guardarError(false);
 
+        //base de precio para la cotización del seguro
+        let resultado = 2000;
+
         //obtener la diferencia de años
+        const diferencia = obtenerDiferenciaYear(modelo);
 
         //por cada año hay que restar el 3%
+        resultado -= ((diferencia * 3) * resultado / 100);
 
         //Americano 15%
         //Asiatico 5%
         //Europeo 30%
+        resultado = calcularMarca(marca) * resultado;
 
         //Basico aumenta 20%
         //completo 50% del incremento
+        const incrementoPlan = obtenerPlan(plan);
+        resultado = parseFloat(incrementoPlan * resultado).toFixed(2);
 
-        //Total
+        guardarCargando(true);
+        setTimeout(() => {
+            //Elimina spinner
+            guardarCargando(false);
+            //Total para componente principal
+            guardarResumen({
+                cotizacion: Number(resultado),
+                datos
+            });
+        }, 2500);
+
+
     }
 
     return (
@@ -99,9 +119,9 @@ const Formulario = () => {
             >
                 {
                     error
-                    ?
+                        ?
                         <Error>Todos los campos son obligatorios</Error>
-                    :
+                        :
                         null
                 }
                 <Campo>
@@ -142,14 +162,14 @@ const Formulario = () => {
                         type="radio"
                         name="plan"
                         value="basico"
-                        checked={plan==="basico"}
+                        checked={plan === "basico"}
                         onChange={obtenerInfoFormulario}
                     />Básico
                     <InputRadio
                         type="radio"
                         name="plan"
                         value="completo"
-                        checked={plan==="completo"}
+                        checked={plan === "completo"}
                         onChange={obtenerInfoFormulario}
                     />Completo
                 </Campo>
